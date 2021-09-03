@@ -16,13 +16,14 @@ const commands = [
     name: "list-squares",
     description: "Lists all the squares on the board"
   },
-  {
-    name: "remove-square",
-    description: "Removes a square from the board"
-  },
+  new SlashCommandBuilder()
+    .setName('remove-square')
+    .setDescription('Removes a square from the list')
+    .addIntegerOption(option => option.setName('input').setDescription('Square index').setRequired(true))
+    .toJSON(),
   new SlashCommandBuilder()
     .setName('add-square')
-    .setDescription('Adds a square to the board')
+    .setDescription('Adds a square to the list')
     .addStringOption(option => option.setName('input').setDescription('Enter new square').setRequired(true))
     .toJSON()
 ];
@@ -92,7 +93,6 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
   switch(interaction.commandName){
     case "board":
-      console.log(generate_board());
       await interaction.reply('Creating board!');
       break;
     case "list-squares":
@@ -113,11 +113,12 @@ client.on('interactionCreate', async interaction => {
       }
       break;
     case "remove-square":
-      
-
-
+      let curr_squares = get_squares();
+      const index = interaction.options.getInteger('input');
+      curr_squares.splice(index, 1);
+      fs.writeFileSync("./squares.txt", curr_squares.join("\n"));
+      await interaction.reply('Removed square!');
       break;
-
   }
 });
 
