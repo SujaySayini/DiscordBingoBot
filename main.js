@@ -1,7 +1,7 @@
 const { Client, Intents, MessageAttachment } = require('discord.js');
 const creds = require('./credentials.json');
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
-
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
 
@@ -17,15 +17,15 @@ const commands = [
     description: "Lists all the squares on the board"
   },
   {
-    name: "add-square",
-    description: "Adds a square to the board"
-  },
-  {
     name: "remove-square",
     description: "Removes a square from the board"
-  }
+  },
+  new SlashCommandBuilder()
+    .setName('add-square')
+    .setDescription('Adds a square to the board')
+    .addStringOption(option => option.setName('input').setDescription('Enter new square').setRequired(true))
+    .toJSON()
 ];
-
 const rest = new REST({ version: '9' }).setToken(creds.token);
 
 const player_map = {
