@@ -102,6 +102,22 @@ client.on('interactionCreate', async interaction => {
       }
       await interaction.reply(`LISTING SQUARES:\n${squares.join("\n")}`);
       break;
+    case "add-square":
+      const str = interaction.options.getString('input');
+      try{
+        fs.appendFileSync("./squares.txt", `\n${str}`);
+        await interaction.reply('Congrats, input is in our files!');
+      } catch (error){
+        await interaction.reply('Uh oh! Something went wrong, please try again.');
+        console.error(error);
+      }
+      break;
+    case "remove-square":
+      
+
+
+      break;
+
   }
 });
 
