@@ -12,12 +12,11 @@ const { createCanvas, loadImage } = require('canvas')
 const commands = [
   //make sure not to go under 25 when deleting 
   new SlashCommandBuilder()
-    .setName('add-user')
+    .setName('board')
     .setDescription('Enter your name and you will get your board.')
-    .addStringOption(option => option.setName('input').setDescription('Enter your name...').setRequired(true))
     .toJSON(),
   {
-    name: 'end-game',
+    name: 'end',
     description: 'The game is ending now. Good game!'
   },
   {
@@ -25,21 +24,21 @@ const commands = [
     description: "Lists all the squares on the board"
   },
   {
-    name: "show-all-boards",
+    name: "show-all",
     description: "Show all the boards playing in the game"
   },
   new SlashCommandBuilder()
-    .setName('fill-square')
+    .setName('fill')
     .setDescription('Fill in the square on everyone\'s board')
     .addIntegerOption(option => option.setName('input').setDescription('Square index').setRequired(true))
     .toJSON(),
   new SlashCommandBuilder()
-    .setName('unfill-square')
+    .setName('unfill')
     .setDescription('unfill the square on everyone\'s board')
     .addIntegerOption(option => option.setName('input').setDescription('Square index').setRequired(true))
     .toJSON(),
   new SlashCommandBuilder()
-    .setName('show-your-board')
+    .setName('show')
     .setDescription('Show your board in the game')
     .addStringOption(option => option.setName('input').setDescription('Your name').setRequired(true))
     .toJSON(),
@@ -59,6 +58,8 @@ const rest = new REST({ version: '9' }).setToken(creds.token);
 const player_map = {
 
 };
+
+const filled_squares = new Set();
 
 const get_squares = () => {
   const raw = fs.readFileSync("./squares.txt", "utf8");
@@ -87,7 +88,10 @@ const generate_board = () => {
   for (let a = 0; a < final_board.length; a++) {
     for (let b = 0; b < 5; b++) {
       if (a === 2 && b === 2) {
-        final_board[a].push("FREE");
+        final_board[a].push({
+          selected_square:"FREE",
+          index: -1
+        });
       } else {
         final_board[a].push(collected_random_squares.shift());
       }
@@ -96,8 +100,7 @@ const generate_board = () => {
   return final_board;
 }
 
-const create_user_img = (user_name) => {
-  let board = generate_board();
+const create_user_img = (board) => {
   const canvas = createCanvas(500, 500);
   const ctx = canvas.getContext('2d');
   //ctx.font = '30px Impact';
@@ -122,7 +125,7 @@ const create_user_img = (user_name) => {
 
   //   for(let j = 0; j<5;j++){
 
-  //   }
+  //   }git
   // }  
 
 
@@ -154,16 +157,17 @@ client.once('ready', () => {
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
   switch (interaction.commandName) {
-    case "add-user":
-      const string = interaction.options.getString('input');
-      const attachment = create_user_img(string);
-
+    case "board":
+      let board = generate_board();
+      const attachment = create_user_img(board);
+      player_map[interaction.user.username] = board;
       await interaction.reply({ files: [attachment] });
       break;
-    case "end-game":
-
+    case "end":
+      player_map = {};
+      selected_square.clear();
       break;
-    case "list-squares":
+    case "list":
       const squares = get_squares();
       for (let [index, square] of squares.entries()) {
         squares[index] = `${index}: ${square}`;
@@ -171,15 +175,23 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply(`LISTING SQUARES:\n${squares.join("\n")}`);
       break;
     case "show-all-boards":
-
       break;
-    case "fill-square":
-
+    case "fill":{
+      const square_index = interaction.options.getInteger("input");
+      filled_squares.add(square_index);
+      await interaction.reply(`FILLED SQUARE ${square_index}`);
       break;
-    case "unfill-square":
-
+    }
+    case "unfill":{
+      const square_index = interaction.options.getInteger("input");
+      filled_squares.delete(square_index);
+      await interaction.reply(`UNFILLED SQUARE ${square_index}`);
       break;
-    case "show-your-board":
+    }
+    case "show-all":
+      await interaction.reply("test");
+      break;
+    case "show":
 
       break;
     case "add-square":
