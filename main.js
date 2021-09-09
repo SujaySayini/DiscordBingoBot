@@ -103,7 +103,7 @@ const generate_board = () => {
 const create_user_img = (board) => {
   const canvas = createCanvas(500, 500);
   const ctx = canvas.getContext('2d');
-  //ctx.font = '30px Impact';
+  ctx.font = '10px Impact';
   //ctx.fillText('Awesome!', 50, 100);
   ctx.fillStyle = 'white';
   ctx.fillRect(0,0,500,500);
@@ -120,18 +120,33 @@ const create_user_img = (board) => {
     ctx.lineTo(500, 100 * (i+1));
   }
   ctx.stroke();
-  
-  // for(let i = 0; i<5; i++){
 
-  //   for(let j = 0; j<5;j++){
-
-  //   }git
-  // }  
-
+  for(let i = 0; i<5; i++){
+    for(let j = 0; j<5;j++){
+      let final_text = format_text(ctx, board[i][j].selected_square);
+      ctx.fillText(final_text, 10 + (i*100), 10 + (j*100));
+    }
+  }  
 
   const attachment = new MessageAttachment(canvas.toBuffer(), 'user_board.png');
-  //player_map[user_name] = attachment;
+  player_map[user_name] = board;
   return attachment;
+}
+
+
+const format_text = (ctx, long_text) => {
+  let arr_text = long_text.split(' ');
+  let smaller_text = '';
+  let final_str = '';
+
+  for(let x of arr_text){
+    
+    let current_size = ctx.measureText(smaller_text); 
+
+
+  }
+
+  return final_str;
 }
 
 (async () => {
