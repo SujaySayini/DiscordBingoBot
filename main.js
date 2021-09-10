@@ -13,7 +13,7 @@ const commands = [
   //make sure not to go under 25 when deleting 
   new SlashCommandBuilder()
     .setName('board')
-    .setDescription('Enter your name and you will get your board.')
+    .setDescription('You will get your board.')
     .toJSON(),
   {
     name: 'end',
@@ -40,7 +40,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('show')
     .setDescription('Show your board in the game')
-    .addStringOption(option => option.setName('input').setDescription('Your name').setRequired(true))
+    //.addStringOption(option => option.setName('input').setDescription('Your name').setRequired(true))
     .toJSON(),
   new SlashCommandBuilder()
     .setName('remove-square')
@@ -109,6 +109,7 @@ const create_user_img = (board) => {
   ctx.fillRect(0,0,500,500);
   ctx.fillStyle = 'black';
   ctx.strokeRect(0, 0, 500, 500);
+  ctx.textAlign = 'center';
 
   ctx.beginPath();
   for(let i = 0; i<4; i++){
@@ -121,32 +122,51 @@ const create_user_img = (board) => {
   }
   ctx.stroke();
 
-  for(let i = 0; i<5; i++){
+  for(let i = 0; i<5; i++){ 
     for(let j = 0; j<5;j++){
-      let final_text = format_text(ctx, board[i][j].selected_square);
-      ctx.fillText(final_text, 10 + (i*100), 10 + (j*100));
+
+      let final_text = format_text(ctx, board[i][j].selected_square, board[i][j].index);
+      const metrics = ctx.measureText(final_text)
+      const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+      const y = 50 + (j * 100) - (height/2);
+      ctx.fillText(final_text, 50 + (i*100), y);
     }
   }  
+// Add X for square that are already marked
 
+for(let i = 0; i<5; i++){ 
+  for(let j = 0; j<5;j++){
+
+  }
+}
   const attachment = new MessageAttachment(canvas.toBuffer(), 'user_board.png');
-  player_map[user_name] = board;
   return attachment;
 }
 
 
-const format_text = (ctx, long_text) => {
+const format_text = (ctx, long_text, index) => {
   let arr_text = long_text.split(' ');
   let smaller_text = '';
   let final_str = '';
 
-  for(let x of arr_text){
-    
-    let current_size = ctx.measureText(smaller_text); 
+  for(let [index, x] of arr_text.entries()){
+    let current_size = ctx.measureText(smaller_text + ' ' + x).width; 
 
-
+    if(current_size >= 80) {
+      final_str = final_str + smaller_text + '\n';
+      smaller_text = x;
+    }else{
+      if(index === 0){
+        smaller_text = x;
+      }else{
+        smaller_text = `${smaller_text} ${x}`;
+      }
+    }
   }
-
-  return final_str;
+  if(smaller_text != ''){
+    final_str = final_str + smaller_text;
+  }
+  return final_str ;//+ '\n' + index;
 }
 
 (async () => {
