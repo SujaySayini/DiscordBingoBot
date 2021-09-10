@@ -55,11 +55,56 @@ const commands = [
 ];
 const rest = new REST({ version: '9' }).setToken(creds.token);
 
-const player_map = {
-
-};
+const player_map = {};
 
 const filled_squares = new Set();
+
+const board_has_bingo = (board) => {
+  let lines_to_check = []
+  const line_has_bingo = (line) => {
+    return line
+           .map((square) => square.index)
+           .map((index) => index === -1 || filled_squares.has(index))
+           .reduce((a,b) => a && b)
+  }
+  const get_col = (i) => board.map((row) => row[i]).flat()
+  for(let i = 0; i < board.length; i++){
+    lines_to_check.push(board[i]);
+    lines_to_check.push(get_col(i));
+  }
+  lines_to_check.push([
+    board[0][0],
+    board[1][1],
+    board[2][2],
+    board[3][3],
+    board[4][4]
+  ])
+  lines_to_check.push([
+    board[0][4],
+    board[1][3],
+    board[2][2],
+    board[3][1],
+    board[4][0]
+  ])
+  for(let line of lines_to_check){
+    if(line_has_bingo(line)) return true;
+  }
+  return false;
+}
+
+/*
+let test_board = [
+  [1,2,3,4,5],
+  [6,1,8,9,10],
+  [11,12,-1,14,15],
+  [16,17,18,1,20],
+  [21,22,23,24,1]
+].map(i => i.map((index) => {
+  return {
+    index
+  }
+}))
+*/
 
 const get_squares = () => {
   const raw = fs.readFileSync("./squares.txt", "utf8");
