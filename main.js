@@ -4,13 +4,15 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
-
+//npm canvas
+//discord js
 const fs = require("fs");
 
 const { createCanvas, loadImage } = require('canvas')
 
 const commands = [
   //make sure not to go under 25 when deleting 
+  //make sure to write the person who owns which board 
   new SlashCommandBuilder()
     .setName('board')
     .setDescription('You will get your board.')
@@ -67,7 +69,8 @@ const board_has_bingo = (board) => {
            .map((index) => index === -1 || filled_squares.has(index))
            .reduce((a,b) => a && b)
   }
-  const get_col = (i) => board.map((row) => row[i]).flat()
+  const get_col = (i) => board.map((row) => row[i])
+  
   for(let i = 0; i < board.length; i++){
     lines_to_check.push(board[i]);
     lines_to_check.push(get_col(i));
@@ -91,20 +94,6 @@ const board_has_bingo = (board) => {
   }
   return false;
 }
-
-/*
-let test_board = [
-  [1,2,3,4,5],
-  [6,1,8,9,10],
-  [11,12,-1,14,15],
-  [16,17,18,1,20],
-  [21,22,23,24,1]
-].map(i => i.map((index) => {
-  return {
-    index
-  }
-}))
-*/
 
 const get_squares = () => {
   const raw = fs.readFileSync("./squares.txt", "utf8");
@@ -134,7 +123,7 @@ const generate_board = () => {
     for (let b = 0; b < 5; b++) {
       if (a === 2 && b === 2) {
         final_board[a].push({
-          selected_square:"FREE",
+          selected_square: "FREE",
           index: -1
         });
       } else {
@@ -145,73 +134,91 @@ const generate_board = () => {
   return final_board;
 }
 
-const create_user_img = (board) => {
+const create_user_img = (board, username) => {
   const canvas = createCanvas(500, 500);
   const ctx = canvas.getContext('2d');
   ctx.font = '10px Impact';
-  //ctx.fillText('Awesome!', 50, 100);
   ctx.fillStyle = 'white';
-  ctx.fillRect(0,0,500,500);
+  ctx.fillRect(0, 0, 500, 500);
   ctx.fillStyle = 'black';
   ctx.strokeRect(0, 0, 500, 500);
   ctx.textAlign = 'center';
 
   ctx.beginPath();
-  for(let i = 0; i<4; i++){
-    ctx.moveTo(100 * (i+1), 0);   
-    ctx.lineTo(100 * (i+1), 500);
+  for (let i = 0; i < 4; i++) {
+    ctx.moveTo(100 * (i + 1), 0);
+    ctx.lineTo(100 * (i + 1), 500);
   }
-  for(let i = 0; i<4; i++){
-    ctx.moveTo(0, 100 * (i+1));   
-    ctx.lineTo(500, 100 * (i+1));
+  for (let i = 0; i < 4; i++) {
+    ctx.moveTo(0, 100 * (i + 1));
+    ctx.lineTo(500, 100 * (i + 1));
   }
   ctx.stroke();
 
-  for(let i = 0; i<5; i++){ 
-    for(let j = 0; j<5;j++){
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      ctx.fillText(board[i][j].index, (100 * i)+ 10, (100 * j) + 10);
 
-      let final_text = format_text(ctx, board[i][j].selected_square, board[i][j].index);
+      let final_text = format_text(ctx, board[i][j].selected_square);
       const metrics = ctx.measureText(final_text)
       const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-      const y = 50 + (j * 100) - (height/2);
-      ctx.fillText(final_text, 50 + (i*100), y);
+      const y = 50 + (j * 100) - (height / 2);
+      ctx.fillText(final_text, 50 + (i * 100), y);
     }
-  }  
-// Add X for square that are already marked
-
-for(let i = 0; i<5; i++){ 
-  for(let j = 0; j<5;j++){
-
   }
-}
+  //username
+  const metrics2 = ctx.measureText(username)
+  const height2 = metrics2.actualBoundingBoxAscent + metrics2.actualBoundingBoxDescent;
+  ctx.textAlign = 'right';
+  ctx.fillText(username, 490, 500-height2);
+  ctx.textAlign = 'center';
+  ctx.beginPath();
+  // Add X for square that are already marked
+  for (let i = 0; i < 5; i++) {
+    for (let j = 0; j < 5; j++) {
+      for(let curr of filled_squares){
+        //console.log(curr + "-" + board[i][j].index);
+        if(curr === board[i][j].index){
+          // console.log(i + ' ' + j);
+          // console.log('Coordinates:'+ (100 * (i + 1) - 100) + ' ' + 100 * (i + 1));
+          ctx.moveTo(100 * i , 100 * j);
+          ctx.lineTo(100 * (i + 1), 100 * (j + 1));
+          ctx.moveTo(100 * (i + 1), 100 * j);
+          ctx.lineTo(100 * i, 100 * (j + 1));
+        }
+      }
+    }
+  }
+  ctx.strokeStyle = '#ff0000';
+  ctx.stroke();
   const attachment = new MessageAttachment(canvas.toBuffer(), 'user_board.png');
   return attachment;
 }
 
 
-const format_text = (ctx, long_text, index) => {
+const format_text = (ctx, long_text) => {
   let arr_text = long_text.split(' ');
   let smaller_text = '';
   let final_str = '';
 
-  for(let [index, x] of arr_text.entries()){
-    let current_size = ctx.measureText(smaller_text + ' ' + x).width; 
+  for (let [index, x] of arr_text.entries()) {
+    let current_size = ctx.measureText(smaller_text + ' ' + x).width;
 
-    if(current_size >= 80) {
+    if (current_size >= 80) {
       final_str = final_str + smaller_text + '\n';
       smaller_text = x;
-    }else{
-      if(index === 0){
+    } else {
+      if (index === 0) {
         smaller_text = x;
-      }else{
+      } else {
         smaller_text = `${smaller_text} ${x}`;
       }
     }
   }
-  if(smaller_text != ''){
+  if (smaller_text != '') {
     final_str = final_str + smaller_text;
   }
-  return final_str ;//+ '\n' + index;
+  return final_str;
 }
 
 (async () => {
@@ -238,14 +245,19 @@ client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
   switch (interaction.commandName) {
     case "board":
-      let board = generate_board();
-      const attachment = create_user_img(board);
-      player_map[interaction.user.username] = board;
-      await interaction.reply({ files: [attachment] });
+      if(!player_map[interaction.user.username]){
+        let board = generate_board();
+        const attachment = create_user_img(board, interaction.user.username);
+        player_map[interaction.user.username] = board;
+        await interaction.reply({ files: [attachment] });
+      } else{
+        await interaction.reply('Can\'t make a new board, you already have one!');
+      }
       break;
     case "end":
       player_map = {};
       selected_square.clear();
+      await interaction.reply("Clearing all the boards in database!");
       break;
     case "list":
       const squares = get_squares();
@@ -254,25 +266,53 @@ client.on('interactionCreate', async interaction => {
       }
       await interaction.reply(`LISTING SQUARES:\n${squares.join("\n")}`);
       break;
-    case "show-all-boards":
+    case "show-all":
+      // await interaction.reply({ files: [
+      //     Object.keys(player_map)
+      //     .map(key => player_map[key])
+      //     .map(v => create_user_img(v))
+      //   ]
+      // });
+
+      let boards = Object.keys(player_map).map(key => player_map[key]);
+
+      for(let i = 0; i< boards.length;i++){
+        const attachment = create_user_img(boards[i], interaction.user.username);
+        if(i===0){
+          await interaction.reply({ files: [attachment] });
+        }else{
+          await interaction.followUp({ files: [attachment] });
+        }
+      }
       break;
-    case "fill":{
+    case "fill": {
       const square_index = interaction.options.getInteger("input");
       filled_squares.add(square_index);
       await interaction.reply(`FILLED SQUARE ${square_index}`);
+      //check for bingo for all boards 
+      let str = ""
+      for(let key of Object.keys(player_map)){
+        const board = player_map[key];
+        if(board_has_bingo(board)){
+          str = str +`${key}'s board has Bingo!!!!\n`;
+        }
+      }
+      if(str != ""){
+        await interaction.followUp(str);
+      }
       break;
     }
-    case "unfill":{
+    case "unfill": {
       const square_index = interaction.options.getInteger("input");
       filled_squares.delete(square_index);
       await interaction.reply(`UNFILLED SQUARE ${square_index}`);
       break;
     }
-    case "show-all":
-      await interaction.reply("test");
-      break;
     case "show":
-
+      let board1 = player_map[interaction.user.username];
+      const attachment1 = create_user_img(board1, interaction.user.username);
+      await interaction.reply({ files: [attachment1] });
+      //await interaction.followUp(`${interaction.user.username}'s Board`);
       break;
     case "add-square":
       const str = interaction.options.getString('input');
@@ -286,7 +326,7 @@ client.on('interactionCreate', async interaction => {
       break;
     case "remove-square":
       let curr_squares = get_squares();
-      const index = interaction.options.getInteger('input');
+      const index = interaction.options.getInteger('input'); //try catch is it in not available in the list
       curr_squares.splice(index, 1);
       fs.writeFileSync("./squares.txt", curr_squares.join("\n"));
       await interaction.reply('Removed square!');
