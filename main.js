@@ -226,7 +226,7 @@ const format_text = (ctx, long_text) => {
     console.log('Started refreshing application (/) commands.');
 
     await rest.put(
-      Routes.applicationGuildCommands(creds.application_id, "882126573787037716"),
+      Routes.applicationGuildCommands(creds.application_id, "667811230836326400"),
       { body: commands },
     );
 
@@ -259,7 +259,7 @@ client.on('interactionCreate', async interaction => {
       selected_square.clear();
       await interaction.reply("Clearing all the boards in database!");
       break;
-    case "list":
+    case "list-squares":
       const squares = get_squares();
       for (let [index, square] of squares.entries()) {
         squares[index] = `${index}: ${square}`;
