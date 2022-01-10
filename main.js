@@ -53,13 +53,19 @@ const commands = [
     .setName('add-square')
     .setDescription('Adds a square to the list')
     .addStringOption(option => option.setName('input').setDescription('Enter new square').setRequired(true))
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName('list-filled')
+    .setDescription('Lists all the squares filled in')
     .toJSON()
 ];
 const rest = new REST({ version: '9' }).setToken(creds.token);
 
-const player_map = {};
+let player_map = {};
 
-const filled_squares = new Set();
+let winners = new Set();
+
+let filled_squares = new Set([-1]);
 
 const board_has_bingo = (board) => {
   let lines_to_check = []
@@ -162,7 +168,7 @@ const create_user_img = (board, username) => {
       let final_text = format_text(ctx, board[i][j].selected_square);
       const metrics = ctx.measureText(final_text)
       const height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-      const y = 50 + (j * 100) - (height / 2);
+      const y = 55 + (j * 100) - (height / 2);
       ctx.fillText(final_text, 50 + (i * 100), y);
     }
   }
@@ -256,7 +262,7 @@ client.on('interactionCreate', async interaction => {
       break;
     case "end":
       player_map = {};
-      selected_square.clear();
+      filled_squares = new Set([-1]);
       await interaction.reply("Clearing all the boards in database!");
       break;
     case "list-squares":
@@ -275,9 +281,12 @@ client.on('interactionCreate', async interaction => {
       // });
 
       let boards = Object.keys(player_map).map(key => player_map[key]);
-
+      let usernames = Object.keys(player_map);
+      if (boards.length === 0){
+        await interaction.reply('No boards created yet');
+      }
       for(let i = 0; i< boards.length;i++){
-        const attachment = create_user_img(boards[i], interaction.user.username);
+        const attachment = create_user_img(boards[i], usernames[i]);
         if(i===0){
           await interaction.reply({ files: [attachment] });
         }else{
@@ -293,8 +302,9 @@ client.on('interactionCreate', async interaction => {
       let str = ""
       for(let key of Object.keys(player_map)){
         const board = player_map[key];
-        if(board_has_bingo(board)){
+        if(board_has_bingo(board) && !Array.from(winners).includes(key)){
           str = str +`${key}'s board has Bingo!!!!\n`;
+          winners.add(key);
         }
       }
       if(str != ""){
@@ -304,11 +314,16 @@ client.on('interactionCreate', async interaction => {
     }
     case "unfill": {
       const square_index = interaction.options.getInteger("input");
-      filled_squares.delete(square_index);
-      await interaction.reply(`UNFILLED SQUARE ${square_index}`);
+      if (square_index === -1) {
+        await interaction.reply('You are free to fuck off');
+      }
+      else {
+        filled_squares.delete(square_index);
+        await interaction.reply(`UNFILLED SQUARE ${square_index}`);
+      }
       break;
     }
-    case "show": {
+    case "show":{
       if (player_map[interaction.user.username]){
         let board = player_map[interaction.user.username];
         const attachment = create_user_img(board, interaction.user.username);
@@ -316,27 +331,52 @@ client.on('interactionCreate', async interaction => {
         //await interaction.followUp(`${interaction.user.username}'s Board`);
       }
       else {
-        await interaction.reply('No board found. /board to create one!')
+        await interaction.reply('No board found. /board to create one!');
       }
       break;
     }
-    case "add-square":
-      const str = interaction.options.getString('input');
-      try {
-        fs.appendFileSync("./squares.txt", `\n${str}`);
-        await interaction.reply('Congrats, input is in our files!');
-      } catch (error) {
-        await interaction.reply('Uh oh! Something went wrong, please try again.');
-        console.error(error);
+    case "add-square":{
+      let boards = Object.keys(player_map).map(key => player_map[key]);
+      if (boards.length !== 0){
+        await interaction.reply('Game is on going. Wait until it has ended!');
+      }
+      else {
+        const str = interaction.options.getString('input');
+        try {
+          fs.appendFileSync("./squares.txt", `\n${str}`);
+          await interaction.reply('Congrats, input is in our files!');
+        } catch (error) {
+          await interaction.reply('Uh oh! Something went wrong, please try again.');
+          console.error(error);
+        }
       }
       break;
-    case "remove-square":
-      let curr_squares = get_squares();
-      const index = interaction.options.getInteger('input'); //try catch is it in not available in the list
-      curr_squares.splice(index, 1);
-      fs.writeFileSync("./squares.txt", curr_squares.join("\n"));
-      await interaction.reply('Removed square!');
+    }
+    case "remove-square":{
+      let boards = Object.keys(player_map).map(key => player_map[key]);
+      if (boards.length !== 0){
+        await interaction.reply('Game is on going. Wait until it has ended!');
+      }
+      else{
+        let curr_squares = get_squares();
+        const index = interaction.options.getInteger('input'); //try catch is it in not available in the list
+        curr_squares.splice(index, 1);
+        fs.writeFileSync("./squares.txt", curr_squares.join("\n"));
+        await interaction.reply('Removed square!');
+      }
       break;
+    }
+    case "list-filled":{
+      if (Array.from(filled_squares).splice(1).length === 0){
+        await interaction.reply('No squares are filled in yet!')
+      }
+      else{
+        const squares = get_squares();
+        const fills = Array.from(filled_squares).slice(1).map((i) => `${i}: ${squares[i]}`)
+        await interaction.reply(`FILLED SQUARES:\n${fills.join("\n")}`);
+        break;
+      }
+    }
   }
 });
 
