@@ -11,8 +11,8 @@ const fs = require("fs");
 const { createCanvas, loadImage } = require('canvas')
 
 const commands = [
-  //make sure not to go under 25 when deleting 
-  //make sure to write the person who owns which board 
+  //make sure not to go under 25 when deleting
+  //make sure to write the person who owns which board
   new SlashCommandBuilder()
     .setName('board')
     .setDescription('You will get your board.')
@@ -70,7 +70,7 @@ const board_has_bingo = (board) => {
            .reduce((a,b) => a && b)
   }
   const get_col = (i) => board.map((row) => row[i])
-  
+
   for(let i = 0; i < board.length; i++){
     lines_to_check.push(board[i]);
     lines_to_check.push(get_col(i));
@@ -289,7 +289,7 @@ client.on('interactionCreate', async interaction => {
       const square_index = interaction.options.getInteger("input");
       filled_squares.add(square_index);
       await interaction.reply(`FILLED SQUARE ${square_index}`);
-      //check for bingo for all boards 
+      //check for bingo for all boards
       let str = ""
       for(let key of Object.keys(player_map)){
         const board = player_map[key];
@@ -308,12 +308,18 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply(`UNFILLED SQUARE ${square_index}`);
       break;
     }
-    case "show":
-      let board1 = player_map[interaction.user.username];
-      const attachment1 = create_user_img(board1, interaction.user.username);
-      await interaction.reply({ files: [attachment1] });
-      //await interaction.followUp(`${interaction.user.username}'s Board`);
+    case "show": {
+      if (player_map[interaction.user.username]){
+        let board = player_map[interaction.user.username];
+        const attachment = create_user_img(board, interaction.user.username);
+        await interaction.reply({ files: [attachment] });
+        //await interaction.followUp(`${interaction.user.username}'s Board`);
+      }
+      else {
+        await interaction.reply('No board found. /board to create one!')
+      }
       break;
+    }
     case "add-square":
       const str = interaction.options.getString('input');
       try {
